@@ -29,8 +29,6 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=http://localhost:5000/api
     container_name: goaltracker-frontend
     restart: unless-stopped
     ports:
