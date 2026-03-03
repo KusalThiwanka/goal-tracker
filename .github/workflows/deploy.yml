@@ -1,0 +1,40 @@
+name: Deploy to Ubuntu Server
+
+on:
+  push:
+    branches:
+      - main # This workflow triggers automatically when you push to the 'main' branch
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Execute deployment commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          # The script runs securely on your Ubuntu server 
+          script: |
+            # 1. Navigate to where you cloned the repo on your server
+            # Ensure you replace '/var/www/goal-tracker' with your actual server path in the future if needed
+            cd /var/www/goal-tracker || exit
+            
+            # 2. Pull the latest code from GitHub main branch
+            git fetch --all
+            git reset --hard origin/main
+            
+            # 3. Create or update the .env files based on GitHub Secrets
+            # We securely write the server .env
+            echo "MONGO_URI=${{ secrets.MONGO_URI }}" > server/.env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> server/.env
+            echo "PORT=5000" >> server/.env
+            
+            # We securely write the client .env
+            echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" > client/.env
+            
+            # 4. Use Docker Compose to rebuild and restart the containers silently
+            docker-compose up -d --build
